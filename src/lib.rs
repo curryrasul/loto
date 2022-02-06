@@ -49,47 +49,36 @@ impl Contract {
     pub fn join_raffle(&mut self, raffle_id: Id) {
         assert!(
             self.raffles.get(&raffle_id).is_some(),
-            "No raffle with ID - {}",
+            "No raffle with Id - {}",
             raffle_id
         );
 
         let mut raffle = self.raffles.get(&raffle_id).unwrap();
 
-        let deposit = env::attached_deposit();
-        assert_eq!(raffle.ticket_price, deposit, "Wrong deposit");
-
-        raffle.participants.push(env::predecessor_account_id());
-
-        self.raffles.insert(&raffle_id, &raffle);
-
-        log!(
-            "{} is now participant in raffle {}",
-            env::predecessor_account_id(),
-            raffle_id
-        );
+        if let Status::Opened = raffle.status {
+            raffle.participants.push(value: T)
+        } else {
+            panic!("Raffle {} is not active anymore", raffle_id);
+        }
     }
 
     pub(crate) fn draw(&mut self, raffle_id: Id) {
         let mut raffle = self.raffles.get(&raffle_id).unwrap();
 
-        if let Status::ReadyToDraw = raffle.status {
-            let p_number = raffle.participants_number;
-            let t_price = raffle.ticket_price;
+        let p_number = raffle.participants_number;
+        let t_price = raffle.ticket_price;
 
-            let random = self.generate_random(p_number);
-            let winner = raffle.participants[random].clone();
+        let random = self.generate_random(p_number);
+        let winner = raffle.participants[random].clone();
 
-            Promise::new(raffle.creator.clone()).transfer((p_number as u128) * t_price);
-            /*
-                To Make NFT TRANSFER
-            */
-            log!("Winner is {}", winner);
+        Promise::new(raffle.creator.clone()).transfer((p_number as u128) * t_price);
+        /*
+            To Make NFT TRANSFER
+        */
+        log!("Winner is {}", winner);
 
-            raffle.status = Status::Closed;
-            raffle.winner = Some(winner);
-        } else {
-            panic!("Not enough participants: {}", raffle.participants.len());
-        }
+        raffle.status = Status::Closed;
+        raffle.winner = Some(winner);
 
         self.raffles.insert(&raffle_id, &raffle);
     }

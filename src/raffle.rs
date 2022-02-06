@@ -14,7 +14,6 @@ pub struct NFT {
 #[serde(crate = "near_sdk::serde")]
 pub enum Status {
     Opened,
-    ReadyToDraw,
     Closed,
 }
 
