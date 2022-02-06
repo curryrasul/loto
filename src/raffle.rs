@@ -27,4 +27,5 @@ pub struct Raffle {
     pub participants: Vec<AccountId>,
     pub ticket_price: Balance,
     pub status: Status,
+    pub winner: Option<AccountId>,
 }

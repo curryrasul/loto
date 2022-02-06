@@ -1,6 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
-use near_sdk::{env, AccountId, BlockHeight};
+use near_sdk::{assert_one_yocto, env, AccountId, BlockHeight, Promise};
 use near_sdk::{log, near_bindgen, PanicOnDefault};
 
 use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -36,30 +36,6 @@ impl Contract {
         }
     }
 
-    #[payable]
-    pub fn join_raffle(&mut self, raffle_id: Id) {
-        assert!(
-            self.raffles.get(&raffle_id).is_some(),
-            "No raffle with ID - {}",
-            raffle_id
-        );
-
-        let deposit = env::attached_deposit();
-
-        let mut raffle = self.raffles.get(&raffle_id).unwrap();
-        assert_eq!(raffle.ticket_price, deposit, "Wrong deposit");
-
-        raffle.participants.push(env::predecessor_account_id());
-
-        log!(
-            "{} is now participant in raffle {}",
-            env::predecessor_account_id(),
-            raffle_id
-        );
-    }
-
-    // pub fn
-
     pub fn nft_on_transfer(
         &mut self,
         sender_id: AccountId,
@@ -69,7 +45,56 @@ impl Contract {
     ) {
     }
 
-    pub(crate) fn generate_random(&mut self, low: u64, high: u64) -> u64 {
+    #[payable]
+    pub fn join_raffle(&mut self, raffle_id: Id) {
+        assert!(
+            self.raffles.get(&raffle_id).is_some(),
+            "No raffle with ID - {}",
+            raffle_id
+        );
+
+        let mut raffle = self.raffles.get(&raffle_id).unwrap();
+
+        let deposit = env::attached_deposit();
+        assert_eq!(raffle.ticket_price, deposit, "Wrong deposit");
+
+        raffle.participants.push(env::predecessor_account_id());
+
+        self.raffles.insert(&raffle_id, &raffle);
+
+        log!(
+            "{} is now participant in raffle {}",
+            env::predecessor_account_id(),
+            raffle_id
+        );
+    }
+
+    pub(crate) fn draw(&mut self, raffle_id: Id) {
+        let mut raffle = self.raffles.get(&raffle_id).unwrap();
+
+        if let Status::ReadyToDraw = raffle.status {
+            let p_number = raffle.participants_number;
+            let t_price = raffle.ticket_price;
+
+            let random = self.generate_random(p_number);
+            let winner = raffle.participants[random].clone();
+
+            Promise::new(raffle.creator.clone()).transfer((p_number as u128) * t_price);
+            /*
+                To Make NFT TRANSFER
+            */
+            log!("Winner is {}", winner);
+
+            raffle.status = Status::Closed;
+            raffle.winner = Some(winner);
+        } else {
+            panic!("Not enough participants: {}", raffle.participants.len());
+        }
+
+        self.raffles.insert(&raffle_id, &raffle);
+    }
+
+    pub(crate) fn generate_random(&mut self, high: u32) -> usize {
         if env::block_index() != self.block_index {
             self.block_index = env::block_index();
             self.random_seed = env::random_seed().try_into().unwrap();
@@ -78,7 +103,7 @@ impl Contract {
         let mut rng: StdRng = SeedableRng::from_seed(self.random_seed);
         self.random_seed.iter_mut().for_each(|x| *x += 1);
 
-        let random = rng.gen_range(low, high);
+        let random: usize = rng.gen_range(0, high) as usize;
 
         log!("Generated number: {}", random);
 
