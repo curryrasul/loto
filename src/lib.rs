@@ -1,6 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
-use near_sdk::{env, BlockHeight};
+use near_sdk::{env, AccountId, BlockHeight};
 use near_sdk::{log, near_bindgen, PanicOnDefault};
 
 use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -19,6 +19,7 @@ pub struct Contract {
     block_index: BlockHeight,
     random_seed: [u8; 32],
 
+    // Raffles state
     raffles: UnorderedMap<Id, Raffle>,
     next_id: Id,
 }
@@ -35,6 +36,39 @@ impl Contract {
         }
     }
 
+    #[payable]
+    pub fn join_raffle(&mut self, raffle_id: Id) {
+        assert!(
+            self.raffles.get(&raffle_id).is_some(),
+            "No raffle with ID - {}",
+            raffle_id
+        );
+
+        let deposit = env::attached_deposit();
+
+        let mut raffle = self.raffles.get(&raffle_id).unwrap();
+        assert_eq!(raffle.ticket_price, deposit, "Wrong deposit");
+
+        raffle.participants.push(env::predecessor_account_id());
+
+        log!(
+            "{} is now participant in raffle {}",
+            env::predecessor_account_id(),
+            raffle_id
+        );
+    }
+
+    // pub fn
+
+    pub fn nft_on_transfer(
+        &mut self,
+        sender_id: AccountId,
+        previous_owner_id: AccountId,
+        token_id: String,
+        _msg: String,
+    ) {
+    }
+
     pub(crate) fn generate_random(&mut self, low: u64, high: u64) -> u64 {
         if env::block_index() != self.block_index {
             self.block_index = env::block_index();
@@ -49,5 +83,25 @@ impl Contract {
         log!("Generated number: {}", random);
 
         random
+    }
+
+    pub fn active_raffles(&self) -> Vec<(Id, Raffle)> {
+        self.raffles
+            .iter()
+            .filter(|(_, v)| {
+                if let Status::Opened = v.status {
+                    true
+                } else {
+                    false
+                }
+            })
+            .map(|(k, v)| (k, v))
+            .collect()
+    }
+
+    pub fn get_raffle_by_id(&self, raffle_id: Id) -> Raffle {
+        self.raffles
+            .get(&raffle_id)
+            .expect(&format!("No raffle with Id - {}", raffle_id))
     }
 }
