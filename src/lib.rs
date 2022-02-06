@@ -1,8 +1,14 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::collections::UnorderedMap;
 use near_sdk::{env, BlockHeight};
 use near_sdk::{log, near_bindgen, PanicOnDefault};
 
 use rand::{rngs::StdRng, Rng, SeedableRng};
+
+mod raffle;
+use raffle::*;
+
+type Id = u64;
 
 near_sdk::setup_alloc!();
 
@@ -12,6 +18,9 @@ pub struct Contract {
     // block_index, random_seed for random number generation
     block_index: BlockHeight,
     random_seed: [u8; 32],
+
+    raffles: UnorderedMap<Id, Raffle>,
+    next_id: Id,
 }
 
 #[near_bindgen]
@@ -21,6 +30,8 @@ impl Contract {
         Self {
             block_index: 0,
             random_seed: [0; 32],
+            raffles: UnorderedMap::new(b"a"),
+            next_id: 0,
         }
     }
 
