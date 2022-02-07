@@ -3,11 +3,13 @@ use near_sdk::serde::Serialize;
 use near_sdk::{AccountId, Balance};
 use rand::distributions::Standard;
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize)]
+pub type TokenId = String;
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct NFT {
     pub smart_contract: AccountId,
-    pub id: String,
+    pub id: TokenId,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize)]

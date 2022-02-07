@@ -1,7 +1,7 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
 use near_sdk::{env, AccountId, BlockHeight, Promise};
-use near_sdk::{log, near_bindgen, PanicOnDefault};
+use near_sdk::{ext_contract, log, near_bindgen, PanicOnDefault};
 
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
@@ -11,6 +11,12 @@ use raffle::*;
 type Id = u64;
 
 near_sdk::setup_alloc!();
+
+#[ext_contract(nft_contract)]
+pub trait NFT {
+    #[payable]
+    fn nft_transfer(&mut self, receiver_id: AccountId, token_id: TokenId, memo: Option<String>);
+}
 
 #[near_bindgen]
 #[derive(BorshSerialize, BorshDeserialize, PanicOnDefault)]
@@ -77,6 +83,7 @@ impl Contract {
         }
     }
 
+    #[payable]
     pub(crate) fn draw(&mut self, raffle_id: Id) {
         let mut raffle = self.raffles.get(&raffle_id).unwrap();
 
@@ -87,9 +94,20 @@ impl Contract {
         let winner = raffle.participants[random].clone();
 
         Promise::new(raffle.creator.clone()).transfer((p_number as u128) * t_price);
-        /*
-            To Make NFT TRANSFER
-        */
+
+        let token_id: TokenId = raffle.prize.clone().id;
+        let nft_contract = raffle.prize.smart_contract.clone();
+
+        // NFT transfer to winner
+        nft_contract::nft_transfer(
+            winner.clone(),
+            token_id,
+            None,
+            &nft_contract,
+            1,
+            5_000_000_000_000,
+        );
+
         log!("Winner is {}", winner);
 
         raffle.status = Status::Closed;
