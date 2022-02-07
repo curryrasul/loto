@@ -1,6 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
-use near_sdk::{assert_one_yocto, env, AccountId, BlockHeight, Promise};
+use near_sdk::{env, AccountId, BlockHeight, Promise};
 use near_sdk::{log, near_bindgen, PanicOnDefault};
 
 use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -56,7 +56,22 @@ impl Contract {
         let mut raffle = self.raffles.get(&raffle_id).unwrap();
 
         if let Status::Opened = raffle.status {
-            raffle.participants.push(value: T)
+            let deposit = env::attached_deposit();
+
+            // Make refund!
+            assert_eq!(deposit, raffle.ticket_price, "Incorrect deposit");
+
+            raffle.participants.push(env::predecessor_account_id());
+
+            log!(
+                "Participant {} joined to raffle {}",
+                env::predecessor_account_id(),
+                raffle_id
+            );
+
+            if raffle.participants.len() as u32 == raffle.participants_number {
+                self.draw(raffle_id);
+            }
         } else {
             panic!("Raffle {} is not active anymore", raffle_id);
         }
