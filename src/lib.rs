@@ -13,7 +13,7 @@ type Id = u64;
 near_sdk::setup_alloc!();
 
 #[ext_contract(nft_contract)]
-pub trait NFT {
+pub trait NFT_ext_contract {
     #[payable]
     fn nft_transfer(&mut self, receiver_id: AccountId, token_id: TokenId, memo: Option<String>);
 }
@@ -49,6 +49,22 @@ impl Contract {
         token_id: String,
         _msg: String,
     ) {
+        let nft_contract = env::predecessor_account_id();
+        // let participants_number =
+        // let ticket_price
+
+        // let raffle = Raffle {
+        //     creator: sender_id,
+        //     prize: NFT {
+        //         smart_contract: nft_contract,
+        //         id: token_id,
+        //     },
+        //     // participants_number: u32::
+        //     participants: Vec::new(),
+        //     // ticket_price:
+        //     status: Status::Opened,
+        //     winner: None,
+        // };
     }
 
     #[payable]
@@ -64,8 +80,12 @@ impl Contract {
         if let Status::Opened = raffle.status {
             let deposit = env::attached_deposit();
 
-            // Make refund!
-            assert_eq!(deposit, raffle.ticket_price, "Incorrect deposit");
+            assert!(deposit > raffle.ticket_price, "Small deposit");
+
+            let refund = deposit - raffle.ticket_price;
+            if refund != 0 {
+                Promise::new(env::predecessor_account_id()).transfer(refund);
+            }
 
             raffle.participants.push(env::predecessor_account_id());
 
@@ -83,8 +103,7 @@ impl Contract {
         }
     }
 
-    #[payable]
-    pub(crate) fn draw(&mut self, raffle_id: Id) {
+    fn draw(&mut self, raffle_id: Id) {
         let mut raffle = self.raffles.get(&raffle_id).unwrap();
 
         let p_number = raffle.participants_number;
@@ -116,14 +135,15 @@ impl Contract {
         self.raffles.insert(&raffle_id, &raffle);
     }
 
-    pub(crate) fn generate_random(&mut self, high: u32) -> usize {
+    // Random number generation
+    fn generate_random(&mut self, high: u32) -> usize {
         if env::block_index() != self.block_index {
             self.block_index = env::block_index();
             self.random_seed = env::random_seed().try_into().unwrap();
         }
 
         let mut rng: StdRng = SeedableRng::from_seed(self.random_seed);
-        self.random_seed.iter_mut().for_each(|x| *x += 1);
+        self.random_seed[0] += 1;
 
         let random: usize = rng.gen_range(0, high) as usize;
 
