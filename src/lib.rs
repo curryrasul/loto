@@ -1,6 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
-use near_sdk::{env, AccountId, BlockHeight, Promise};
+use near_sdk::{env, AccountId, Balance, BlockHeight, Promise};
 use near_sdk::{ext_contract, log, near_bindgen, PanicOnDefault};
 
 use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -9,6 +9,9 @@ mod raffle;
 use raffle::*;
 
 type Id = u64;
+
+const YOCTO_NEAR: Balance = 1;
+const GAS_COST: u64 = 5_000_000_000_000;
 
 near_sdk::setup_alloc!();
 
@@ -80,7 +83,7 @@ impl Contract {
         if let Status::Opened = raffle.status {
             let deposit = env::attached_deposit();
 
-            assert!(deposit > raffle.ticket_price, "Small deposit");
+            assert!(deposit >= raffle.ticket_price, "Small deposit");
 
             let refund = deposit - raffle.ticket_price;
             if refund != 0 {
@@ -117,22 +120,15 @@ impl Contract {
         let token_id: TokenId = raffle.prize.clone().id;
         let nft_contract = raffle.prize.smart_contract.clone();
 
-        // NFT transfer to winner
-        nft_contract::nft_transfer(
-            winner.clone(),
-            token_id,
-            None,
-            &nft_contract,
-            1,
-            5_000_000_000_000,
-        );
-
         log!("Winner is {}", winner);
 
         raffle.status = Status::Closed;
-        raffle.winner = Some(winner);
+        raffle.winner = Some(winner.clone());
 
         self.raffles.insert(&raffle_id, &raffle);
+
+        // NFT transfer to winner
+        nft_contract::nft_transfer(winner, token_id, None, &nft_contract, YOCTO_NEAR, GAS_COST);
     }
 
     // Random number generation
