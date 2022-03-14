@@ -8,6 +8,9 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 mod raffle;
 use raffle::*;
 
+mod event;
+use event::*;
+
 type Id = u64;
 
 const YOCTO_NEAR: Balance = 1;
@@ -59,12 +62,23 @@ impl Contract {
     ) -> bool {
         let nft_contract = env::predecessor_account_id();
 
-        // Parsing memo msg from nft-transfer-call function
-        let participants_number = &msg[..5];
-        let ticket_price = &msg[6..];
+        // Parsing message arguments
+        let split: Vec<&str> = msg.split(',').into_iter().collect();
+        if split.len() != 2 {
+            log!("Wrong message format");
+            return true;
+        }
 
-        let participants_number: u32 = participants_number.parse().unwrap();
-        let ticket_price: Balance = ticket_price.parse().unwrap();
+        let participants_number = split[0].parse::<u32>();
+        let ticket_price = split[1].parse::<Balance>();
+
+        if !matches!(participants_number, Ok(_)) || !matches!(ticket_price, Ok(_)) {
+            log!("Wrong message format");
+            return true;
+        }
+
+        let participants_number = participants_number.unwrap();
+        let ticket_price = ticket_price.unwrap();
 
         // Initialize the raffle
         let raffle = Raffle {
@@ -85,8 +99,10 @@ impl Contract {
 
         self.raffles.insert(&id, &raffle);
 
+        let event = Event(id);
+
         // Log an event with raffle Id for client
-        log!("");
+        log!("{}", event);
 
         // Do not return NFT back to the owner
         false
