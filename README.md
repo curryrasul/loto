@@ -12,4 +12,4 @@ The best thing is decentralization, which will give us fair draw (secure random)
 ## Disadvantages
 This project is just an example, what you can make with NFTs on NEAR Protocol.
 The reason is opportunity for the creator to play unfairly. How? Well, he can register himself like a participant too, thus he will earn from tickets and also have a chance to win NFT.
-The problem can be solved with KYC, or maybe some privacy preserving KYC with zk &#129488;&#129488;&#129488;
+The problem can be solved with KYC or maybe some privacy preserving KYC with zk &#129488;&#129488;&#129488;
