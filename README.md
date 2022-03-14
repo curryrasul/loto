@@ -7,7 +7,7 @@ The best thing is decentralization, which will give us fair draw (secure random)
 ## How that works
 * NFT (NEP-171) owner sends the NFT, which he wants to draw, to Loto smart-contract. He also set the rules: how many participants will be in the game and ticket price.
 * Now, raffle is opened for everyone, and it shows up in the web-client. To participate you just need to attach correct deposit (ticket price). 
-* After the last participant registers, the NFT will be transferred to a random participant, and all the money from the tickets will go to the creator. 
+* After the last participant registers, the NFT will be transferred to a random participant, and all the money from tickets will go to the creator. 
 
 ## Disadvantages
 This project is just an example, what you can make with NFTs on NEAR Protocol.
