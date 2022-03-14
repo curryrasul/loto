@@ -1,7 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::Serialize;
 use near_sdk::{AccountId, Balance};
-use rand::distributions::Standard;
 
 pub type TokenId = String;
 
