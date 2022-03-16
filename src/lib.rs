@@ -118,6 +118,9 @@ impl Contract {
 
         // If the raffle is closed => panic!
         if let Status::Opened = raffle.status {
+            // Check if the participant is not the creator
+            assert_ne!(raffle.creator, env::predecessor_account_id(), "Creator cannot register himself");
+
             // Check the deposit amount
             let deposit = env::attached_deposit();
 
