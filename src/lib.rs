@@ -78,6 +78,12 @@ impl Contract {
         }
 
         let participants_number = participants_number.unwrap();
+
+        if participants_number == 0 || participants_number == 1 {
+            log!("Minimum number of participants is 2");
+            return true;
+        }
+
         let ticket_price = ticket_price.unwrap();
 
         // Initialize the raffle
