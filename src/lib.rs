@@ -1,8 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
-use near_sdk::{
-    env, ext_contract, log, near_bindgen, AccountId, Balance, BlockHeight, PanicOnDefault, Promise,
-};
+use near_sdk::{env, ext_contract, log, near_bindgen, AccountId, Balance, PanicOnDefault, Promise};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 mod raffle;
@@ -14,6 +12,7 @@ use event::*;
 type Id = u64;
 
 const YOCTO_NEAR: Balance = 1;
+const ONE_NEAR: Balance = 1_000_000_000_000_000_000_000_000;
 const GAS_COST: u64 = 5_000_000_000_000;
 
 near_sdk::setup_alloc!();
@@ -28,11 +27,6 @@ pub trait NFT_ext_contract {
 #[near_bindgen]
 #[derive(BorshSerialize, BorshDeserialize, PanicOnDefault)]
 pub struct Contract {
-    // block_index, random_seed for random number generation
-    block_index: BlockHeight,
-    random_seed: [u8; 32],
-
-    // Raffles state
     raffles: UnorderedMap<Id, Raffle>,
     next_id: Id,
 }
@@ -46,8 +40,6 @@ impl Contract {
         log!("Contract is initialized");
 
         Self {
-            block_index: 0,
-            random_seed: [0; 32],
             raffles: UnorderedMap::new(b"a"),
             next_id: 0,
         }
@@ -84,7 +76,7 @@ impl Contract {
             return true;
         }
 
-        let ticket_price = ticket_price.unwrap();
+        let ticket_price = ticket_price.unwrap() * ONE_NEAR;
 
         // Initialize the raffle
         let raffle = Raffle {
@@ -125,7 +117,11 @@ impl Contract {
         // If the raffle is closed => panic!
         if let Status::Opened = raffle.status {
             // Check if the participant is not the creator
-            assert_ne!(raffle.creator, env::predecessor_account_id(), "Creator cannot register himself");
+            assert_ne!(
+                raffle.creator,
+                env::predecessor_account_id(),
+                "Creator cannot register himself"
+            );
 
             // Check the deposit amount
             let deposit = env::attached_deposit();
@@ -195,19 +191,8 @@ impl Contract {
 
     // Random number generation
     fn generate_random(&mut self, high: u32) -> usize {
-        // If this transaction is in the new block
-        // we can use new random_seed
-        if env::block_index() != self.block_index {
-            self.block_index = env::block_index();
-            self.random_seed = env::random_seed().try_into().unwrap();
-        }
-
         // Creating generator from current random_seed
-        let mut rng: StdRng = SeedableRng::from_seed(self.random_seed);
-
-        // Changing random_seed for next transaction
-        // because if it's in the same block, it will give us the same output
-        self.random_seed[0] = self.random_seed[0].wrapping_add(1);
+        let mut rng: StdRng = SeedableRng::from_seed(env::random_seed().try_into().unwrap());
 
         // Random number on interval [0; high)
         let random: usize = rng.gen_range(0, high) as usize;
