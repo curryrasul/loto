@@ -5,28 +5,17 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 
 mod consts;
 mod event;
+mod nft_transfer;
 mod raffle;
 mod types;
 
 use consts::*;
 use event::*;
+use nft_transfer::*;
 use raffle::*;
 use types::*;
 
 near_sdk::setup_alloc!();
-
-// External NFT-contract for cross-contract call
-#[ext_contract(nft_contract)]
-pub trait ext_contract {
-    #[payable]
-    fn nft_transfer(
-        &mut self,
-        receiver_id: AccountId,
-        token_id: TokenId,
-        approval_id: u64,
-        memo: Option<String>,
-    );
-}
 
 #[near_bindgen]
 #[derive(BorshSerialize, BorshDeserialize, PanicOnDefault)]
@@ -142,6 +131,7 @@ impl Contract {
             let refund = deposit - raffle.ticket_price;
             if refund != 0 {
                 Promise::new(env::predecessor_account_id()).transfer(refund);
+                log!("{} $NEAR was refunded", refund / ONE_NEAR);
             }
 
             // Add participant
@@ -152,6 +142,8 @@ impl Contract {
                 env::predecessor_account_id(),
                 raffle_id
             );
+
+            self.raffles.insert(&raffle_id, &raffle);
 
             // If the participant is the last one in this raffle => draw
             if raffle.participants.len() as u32 == raffle.participants_number {
