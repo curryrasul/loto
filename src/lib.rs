@@ -50,13 +50,13 @@ impl Contract {
         token_id: String,
         msg: String,
     ) -> bool {
-        let nft_contract = env::predecessor_account_id();
-
         assert_ne!(
             sender,
             env::predecessor_account_id(),
             "Only NFT-contract can call this function"
         );
+
+        let nft_contract = env::predecessor_account_id();
 
         // Parsing message arguments
         let split: Vec<&str> = msg.split(',').into_iter().collect();
