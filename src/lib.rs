@@ -171,12 +171,12 @@ impl Contract {
         Promise::new(raffle.creator.clone()).transfer(amount);
 
         log!(
-            "Money ({} YoctoNEAR) was transferred to a raffle creator ({})",
-            amount,
+            "Money ({} $NEAR) was transferred to a raffle creator ({})",
+            amount / ONE_NEAR,
             raffle.creator
         );
 
-        let token_id: TokenId = raffle.prize.clone().id;
+        let token_id = raffle.prize.clone().id;
         let nft_contract = raffle.prize.smart_contract.clone();
 
         // Set the winner and close the raffle
