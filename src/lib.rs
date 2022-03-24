@@ -45,12 +45,18 @@ impl Contract {
 
     pub fn nft_on_transfer(
         &mut self,
-        _sender: AccountId,
+        sender: AccountId,
         previous_owner_id: AccountId,
         token_id: String,
         msg: String,
     ) -> bool {
         let nft_contract = env::predecessor_account_id();
+
+        assert_ne!(
+            sender,
+            env::predecessor_account_id(),
+            "Only NFT-contract can call this function"
+        );
 
         // Parsing message arguments
         let split: Vec<&str> = msg.split(',').into_iter().collect();
