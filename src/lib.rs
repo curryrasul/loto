@@ -3,23 +3,21 @@ use near_sdk::collections::UnorderedMap;
 use near_sdk::{env, ext_contract, log, near_bindgen, AccountId, Balance, PanicOnDefault, Promise};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
-mod raffle;
-use raffle::*;
-
+mod consts;
 mod event;
+mod raffle;
+mod types;
+
+use consts::*;
 use event::*;
-
-type Id = u64;
-
-const YOCTO_NEAR: Balance = 1;
-const ONE_NEAR: Balance = 1_000_000_000_000_000_000_000_000;
-const GAS_COST: u64 = 5_000_000_000_000;
+use raffle::*;
+use types::*;
 
 near_sdk::setup_alloc!();
 
 // External NFT-contract for cross-contract call
 #[ext_contract(nft_contract)]
-pub trait NFT_ext_contract {
+pub trait ext_contract {
     #[payable]
     fn nft_transfer(&mut self, receiver_id: AccountId, token_id: TokenId, memo: Option<String>);
 }
@@ -159,7 +157,7 @@ impl Contract {
         let p_number = raffle.participants_number;
         let t_price = raffle.ticket_price;
 
-        let random = self.generate_random(p_number);
+        let random = self.generate_random(p_number) as usize;
         let winner = raffle.participants[random].clone();
 
         // Amount of NEAR, return to the creator
@@ -190,12 +188,12 @@ impl Contract {
     }
 
     // Random number generation
-    fn generate_random(&mut self, high: u32) -> usize {
+    fn generate_random(&mut self, high: u32) -> u32 {
         // Creating generator from current random_seed
         let mut rng: StdRng = SeedableRng::from_seed(env::random_seed().try_into().unwrap());
 
         // Random number on interval [0; high)
-        let random: usize = rng.gen_range(0, high) as usize;
+        let random: u32 = rng.gen_range(0, high);
 
         log!("Generated number: {}", random);
 

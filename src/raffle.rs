@@ -6,6 +6,7 @@ pub type TokenId = String;
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
+#[allow(clippy::upper_case_acronyms)]
 pub struct NFT {
     pub smart_contract: AccountId,
     pub id: TokenId,
