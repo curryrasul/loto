@@ -19,7 +19,13 @@ near_sdk::setup_alloc!();
 #[ext_contract(nft_contract)]
 pub trait ext_contract {
     #[payable]
-    fn nft_transfer(&mut self, receiver_id: AccountId, token_id: TokenId, memo: Option<String>);
+    fn nft_transfer(
+        &mut self,
+        receiver_id: AccountId,
+        token_id: TokenId,
+        approval_id: u64,
+        memo: Option<String>,
+    );
 }
 
 #[near_bindgen]
@@ -45,13 +51,13 @@ impl Contract {
 
     pub fn nft_on_transfer(
         &mut self,
-        sender: AccountId,
+        sender_id: AccountId,
         previous_owner_id: AccountId,
         token_id: String,
         msg: String,
     ) -> bool {
         assert_ne!(
-            sender,
+            sender_id,
             env::predecessor_account_id(),
             "Only NFT-contract can call this function"
         );
@@ -101,7 +107,7 @@ impl Contract {
 
         self.raffles.insert(&id, &raffle);
 
-        let event = Event(id);
+        let event = Event { raffle_id: id };
 
         // Log an event with raffle Id for client
         log!("{}", event);
@@ -190,7 +196,15 @@ impl Contract {
         self.raffles.insert(&raffle_id, &raffle);
 
         // NFT transfer to winner; cross-contract call
-        nft_contract::nft_transfer(winner, token_id, None, &nft_contract, YOCTO_NEAR, GAS_COST);
+        nft_contract::nft_transfer(
+            winner,
+            token_id,
+            0,
+            None,
+            &nft_contract,
+            YOCTO_NEAR,
+            GAS_COST,
+        );
     }
 
     // Random number generation

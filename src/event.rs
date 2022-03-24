@@ -3,7 +3,9 @@ use std::fmt;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(crate = "near_sdk::serde")]
-pub struct Event(pub u64);
+pub struct Event {
+    pub raffle_id: u64,
+}
 
 impl fmt::Display for Event {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
